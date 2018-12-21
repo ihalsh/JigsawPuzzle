@@ -1,5 +1,7 @@
 package com.mygdx.game.Utils
 
+import com.mygdx.game.Actors.DropTargetActor
+
 class Constants {
 
     companion object {
@@ -8,7 +10,7 @@ class Constants {
         const val WORLD_HEIGHT = 600f
         const val GAME_OVER_DELAY = 0.75f
 
-//        val WALL = Wall::class.qualifiedName.toString()
+        val DROP_TARGET_ACTOR = DropTargetActor::class.qualifiedName.toString()
 
     }
 }
