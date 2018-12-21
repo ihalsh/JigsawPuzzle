@@ -1,5 +1,7 @@
 package com.mygdx.game.Actors
 
+import com.badlogic.gdx.graphics.g2d.Animation
+import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.math.Interpolation
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.InputEvent
@@ -13,10 +15,16 @@ import java.lang.Float.MAX_VALUE
 /**
  * Enables drag-and-drop functionality for actors.
  */
-class DragAndDropActor(x: Float, y: Float, s: Stage, var isDraggable: Boolean = false)
-    : BaseActor(x, y, s) {
+open class DragAndDropActor(
+        x: Float,
+        y: Float,
+        s: Stage,
+        animation: Animation<TextureRegion>,
+        var isDraggable: Boolean = true)
+    : BaseActor(x, y, s, animation) {
 
-    private val self = this@DragAndDropActor
+    private val self: DragAndDropActor
+        get() = this@DragAndDropActor
     private var grabOffsetY = 0f
     private var grabOffsetX = 0f
 
@@ -103,11 +111,11 @@ class DragAndDropActor(x: Float, y: Float, s: Stage, var isDraggable: Boolean = 
             0.50f,
             Interpolation.pow3))
 
-    fun onDragStart() {
+    open fun onDragStart() {
         addAction(scaleTo(1.1f, 1.1f, 0.25f))
     }
 
-    fun onDrop() {
+    open fun onDrop() {
         addAction(scaleTo(1.00f, 1.00f, 0.25f))
     }
 }

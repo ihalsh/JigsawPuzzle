@@ -37,10 +37,18 @@ object Assets : Disposable, AssetErrorListener {
         val startTime = millis()
         with(assetManager) {
 //            logger = com.badlogic.gdx.utils.Logger("AssetManager", com.badlogic.gdx.Application.LOG_INFO)
-            load("ball.png", Texture::class.java)
+            load("background.jpg", Texture::class.java)
+            load("border.jpg", Texture::class.java)
+            load("button.png", Texture::class.java)
+            load("dialog.png", Texture::class.java)
+            load("key-blank.png", Texture::class.java)
+            load("sun.jpg", Texture::class.java)
 //            load("sparkle.png", Pixmap::class.java)
-//            load("OpenSans.ttf", FreeTypeFontGenerator::class.java)
-//            load("boing.wav", Sound::class.java)
+            load("OpenSans.ttf", FreeTypeFontGenerator::class.java)
+            load("click-click.wav", Sound::class.java)
+            load("high-whoosh.wav", Sound::class.java)
+            load("low-whoosh.wav", Sound::class.java)
+            load("whoosh.wav", Sound::class.java)
 //            load("Rollin-at-5.mp3", Music::class.java)
             finishLoading()
         }
@@ -50,10 +58,15 @@ object Assets : Disposable, AssetErrorListener {
     private val ktxLogger = ktx.log.logger<Assets>()
 
     //Single Texture Animation
-//    val paddleAnimation: Animation<TextureRegion> by lazy {
-//        Animation(1f, TextureRegion(assetManager.get<Texture>("paddle.png")))
-//                .apply { playMode = LOOP }
-//    }
+    val backgroundAnimation: Animation<TextureRegion> by lazy {
+        Animation(1f, TextureRegion(assetManager.get<Texture>("background.jpg")))
+                .apply { playMode = LOOP }
+    }
+
+    val borderAnimation: Animation<TextureRegion> by lazy {
+        Animation(1f, TextureRegion(assetManager.get<Texture>("border.jpg")))
+                .apply { playMode = LOOP }
+    }
 
 
     //Music and sound
@@ -61,19 +74,19 @@ object Assets : Disposable, AssetErrorListener {
 //    val backgroundMusic: Music by lazy { assetManager.get<Music>("Rollin-at-5.mp3") }
 
     //Label style
-//    private val customFont = assetManager.get<FreeTypeFontGenerator>("OpenSans.ttf")
-//            .generateFont(FreeTypeFontParameter().apply {
-//                size = 40
-//                color = WHITE
-//                borderWidth = 2f
-//                borderColor = BLACK
-//                borderStraight = true
-//                minFilter = Linear
-//                magFilter = Linear
-//            })
-//    val labelStyle: LabelStyle = LabelStyle().apply {
-//        font = customFont
-//    }
+    private val customFont = assetManager.get<FreeTypeFontGenerator>("OpenSans.ttf")
+            .generateFont(FreeTypeFontParameter().apply {
+                size = 40
+                color = WHITE
+                borderWidth = 2f
+                borderColor = BLACK
+                borderStraight = true
+                minFilter = Linear
+                magFilter = Linear
+            })
+    val labelStyle: LabelStyle = LabelStyle().apply {
+        font = customFont
+    }
 
     //Image button style
 //    val restartButtonStyle = Button.ButtonStyle()

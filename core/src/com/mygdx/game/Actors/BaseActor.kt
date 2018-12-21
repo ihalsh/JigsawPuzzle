@@ -19,7 +19,7 @@ import com.mygdx.game.Utils.Constants.Companion.WORLD_WIDTH
 open class BaseActor(x: Float,
                      y: Float,
                      stage: Stage,
-                     protected var animation: Animation<TextureRegion>? = null,
+                     var animation: Animation<TextureRegion>,
                      private var elapsedTime: Float = 0.toFloat(),
                      protected var animationPaused: Boolean = false,
                      protected val velocityVec: Vector2 = Vector2(0f, 0f),
@@ -36,10 +36,11 @@ open class BaseActor(x: Float,
         setPosition(x, y)
 
         // set size and origin
-        with(animation!!.getKeyFrame(0f)) {
-            setSize(regionWidth.toFloat(), regionHeight.toFloat())
-            setOrigin(regionWidth.toFloat() / 2, regionHeight.toFloat() / 2)
-        }
+            with(animation.getKeyFrame(0f)) {
+                setSize(regionWidth.toFloat(), regionHeight.toFloat())
+                setOrigin(regionWidth.toFloat() / 2, regionHeight.toFloat() / 2)
+            }
+
 
         // set collision polygon
         setBoundaryPoly()
@@ -149,7 +150,7 @@ open class BaseActor(x: Float,
         accelerationVec.set(0f, 0f)
     }
 
-    fun boundToWorld(padX:Float = 0f, padY:Float = 0f) {
+    fun boundToWorld(padX: Float = 0f, padY: Float = 0f) {
         // check left edge
         if (x < padX) x = padX
         // check right edge
@@ -240,7 +241,7 @@ open class BaseActor(x: Float,
             }
 
 
-    fun isAnimationFinished(): Boolean = animation!!.isAnimationFinished(elapsedTime)
+    fun isAnimationFinished(): Boolean = animation.isAnimationFinished(elapsedTime)
 
     override fun act(delta: Float) {
         super.act(delta)
@@ -252,7 +253,7 @@ open class BaseActor(x: Float,
         val c = color
         batch.setColor(c.r, c.g, c.b, c.a)
         if (isVisible) {
-            batch.draw(animation!!.getKeyFrame(elapsedTime),
+            batch.draw(animation.getKeyFrame(elapsedTime),
                     x, y, originX, originY,
                     width, height, scaleX, scaleY, rotation)
         }

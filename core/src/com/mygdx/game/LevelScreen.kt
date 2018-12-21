@@ -3,37 +3,31 @@ package com.mygdx.game
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.InputMultiplexer
 import com.badlogic.gdx.graphics.Color
-import com.badlogic.gdx.math.MathUtils.lerp
+import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.graphics.g2d.Animation
+import com.badlogic.gdx.graphics.g2d.Animation.PlayMode.LOOP
+import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.math.MathUtils.random
-import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.scenes.scene2d.actions.Actions
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.badlogic.gdx.utils.Scaling
 import com.badlogic.gdx.utils.viewport.ScalingViewport
-import com.mygdx.game.Actors.*
+import com.mygdx.game.Actors.BaseActor
 import com.mygdx.game.Actors.BaseActor.Companion.setWorldBounds
+import com.mygdx.game.Actors.PuzzleArea
+import com.mygdx.game.Actors.PuzzlePiece
 import com.mygdx.game.Utils.Assets.assetManager
 import com.mygdx.game.Utils.Assets.backgroundAnimation
-import com.mygdx.game.Utils.Assets.backgroundMusic
-import com.mygdx.game.Utils.Assets.bounceSound
-import com.mygdx.game.Utils.Assets.brickBumpSound
-import com.mygdx.game.Utils.Assets.itemAppearSound
-import com.mygdx.game.Utils.Assets.itemCollectSound
 import com.mygdx.game.Utils.Assets.labelStyle
-import com.mygdx.game.Utils.Assets.wallBumpSound
-import com.mygdx.game.Utils.Constants.Companion.BRICK
 import com.mygdx.game.Utils.Constants.Companion.GAME_OVER_DELAY
-import com.mygdx.game.Utils.Constants.Companion.ITEM
-import com.mygdx.game.Utils.Constants.Companion.SPAWN_PROBABILITY
-import com.mygdx.game.Utils.Constants.Companion.Type.*
-import com.mygdx.game.Utils.Constants.Companion.WALL
+import com.mygdx.game.Utils.Constants.Companion.PUZZLE_PIECE
 import com.mygdx.game.Utils.Constants.Companion.WORLD_HEIGHT
 import com.mygdx.game.Utils.Constants.Companion.WORLD_WIDTH
 import ktx.app.KtxInputAdapter
 import ktx.app.KtxScreen
 import ktx.app.clearScreen
-
 
 class LevelScreen(
         private val mainStage: Stage = Stage(ScalingViewport(Scaling.fit, WORLD_WIDTH, WORLD_HEIGHT)),
@@ -42,36 +36,17 @@ class LevelScreen(
             setFillParent(true)
             uiStage.addActor(this)
         },
-        private var score: Int = 0,
-        private var balls: Int = 3,
         private var endTimer: Float = 0f,
         private var gameOver: Boolean = false) : KtxScreen, KtxInputAdapter {
 
     //Adds backgroundAnimation
     private val background = BaseActor(0f, 0f, mainStage, backgroundAnimation)
 
-    //Adds paddle
-    private var paddle = Paddle(320f, 50f, mainStage)
-
-    //Adds ball
-    private var ball = Ball(0f, 0f, mainStage)
-
-    //Labels
-    private val scoreLabel = Label("Score: $score", labelStyle).apply { setFontScale(0.9f) }
-    private val ballsLabel = Label("Balls: $balls", labelStyle).apply { setFontScale(0.9f) }
-    private val messageLabel = Label("click to start", labelStyle).apply { color = Color.CYAN }
-
-//    private val restartButton = Button(restartButtonStyle).apply {
-//        color = Color.SKY
-//        setOrigin(width / 2, height / 2)
-//    }
-
-    override fun touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
-        if (ball.isPaused) {
-            ball.isPaused = false
-            messageLabel.isVisible = false
-        }
-        return false
+    //Adds message
+    private val messageLabel = Label("...", labelStyle).apply {
+        color = Color.CYAN
+        isVisible = false
+        uiTable.add(this).expandX().expandY().bottom().pad(50f)
     }
 
     override fun show() {
@@ -85,43 +60,41 @@ class LevelScreen(
         //world bounds
         setWorldBounds(baseActor = background)
 
-        //Walls
-        Wall(0f, 0f, 20f, 600f, mainStage) // left wall
-        Wall(780f, 0f, 20f, 600f, mainStage) // right wall
-        Wall(0f, 550f, 800f, 50f, mainStage)// top wall
+        //load images into PuzzlePiece objects randomly positioned on the left side of the screen
+        addPuzzlePieces(2, 2)
+    }
 
-        //Bricks
-        val tempBrick = Brick(0f, 0f, mainStage)
-        val brickWidth = tempBrick.width
-        val brickHeight = tempBrick.height
-        tempBrick.remove()
-        val totalRows = 10
-        val totalCols = 10
-        val marginX = (800 - totalCols * brickWidth) / 2
-        val marginY = 600 - totalRows * brickHeight - 120
-        for (rowNum in 0 until totalRows) {
-            for (colNum in 0 until totalCols) {
-                val x = marginX + brickWidth * colNum
-                val y = marginY + brickHeight * rowNum
-                Brick(x, y, mainStage)
+    private fun addPuzzlePieces(rows: Int, cols: Int) {
+        val texture = assetManager.get<Texture>("sun.jpg")
+        val imageWidth = texture.width
+        val imageHeight = texture.height
+        val pieceWidth = imageWidth / cols
+        val pieceHeight = imageHeight / rows
+        val temp = TextureRegion.split(texture, pieceWidth, pieceHeight)
+        for (r in 0 until rows) {
+            for (c in 0 until cols) {
+                // create puzzle piece at random location on left half of screen
+                val animation = Animation<TextureRegion>(1f, temp[r][c])
+                        .apply { playMode = LOOP }
+                PuzzlePiece(random(0, 400 - pieceWidth).toFloat(),
+                        random(0, 600 - pieceHeight).toFloat(),
+                        mainStage, animation).apply {
+                    row = r
+                    col = c
+                }
+
+                //set up a grid of PuzzleArea objects on the right side of the screen
+                val marginX = (400 - imageWidth) / 2
+                val marginY = (600 - imageHeight) / 2
+                val areaX = 400 + marginX + pieceWidth * c
+                val areaY = 600 - marginY - pieceHeight - pieceHeight * r
+                PuzzleArea(areaX.toFloat(), areaY.toFloat(), mainStage).apply {
+                    setSize(pieceWidth.toFloat(), pieceHeight.toFloat())
+                    setBoundaryPoly()
+                    row = r
+                    col = c
+                }
             }
-        }
-
-        //Position UI elements
-        with(uiTable) {
-            pad(5f)
-            add(scoreLabel).top()
-            add().expandX()
-            add(ballsLabel).top()
-            row()
-            add(messageLabel).colspan(3).expandY()
-        }
-
-        //Play music
-        with(backgroundMusic) {
-            isLooping = true
-            volume = 0.5f
-            play()
         }
     }
 
@@ -129,14 +102,6 @@ class LevelScreen(
 
         endTimer = 0f
 
-//        with(mainStage) {
-//            clear()
-//        }
-
-        //Play music
-//        with(backgroundMusic) {
-//            stop()
-//            play()
     }
 
     private fun update(delta: Float) {
@@ -150,112 +115,17 @@ class LevelScreen(
         uiStage.act(delta)
         mainStage.act(delta)
 
-        //Align paddle with mouse
-        with(paddle) {
-            val mouseXworld = mainStage.viewport.unproject(Vector2(Gdx.input.x.toFloat(), 0f))
-            x = mouseXworld.x - width / 2
-            boundToWorld(padX = 20f)
+        //Check if puzzle solved
+        var solved = true
+        BaseActor.getList(mainStage, PUZZLE_PIECE).forEach { actor ->
+            if (!(actor as PuzzlePiece).isCorrectlyPlaced) solved = false
         }
-
-        //Adds ball and lock the ball into place
-        if (ball.isPaused) {
-            ball.x = paddle.x + paddle.width / 2 - ball.width / 2
-            ball.y = paddle.y + paddle.height / 2 + ball.height / 2
-        }
-
-        //Bounce off the walls
-        BaseActor.getList(mainStage, WALL).forEach { wall ->
-            if (ball.overlaps(wall)) {
-                ball.bounceOff(wall)
-                wallBumpSound.play()
-            }
-        }
-
-        //Bounce off the bricks
-        BaseActor.getList(mainStage, BRICK).forEach { brick ->
-            if (ball.overlaps(brick)) {
-                ball.bounceOff(brick)
-                brickBumpSound.play()
-                brick.remove()
-
-                //increase score
-                score += 100
-                scoreLabel.setText("Score: $score")
-
-                //spawn bonus items
-                if (random(0, 100) < SPAWN_PROBABILITY)
-                    Item(0f, 0f, mainStage).apply { centerAtActor(brick) }
-                itemAppearSound.play()
-            }
-        }
-
-        //Implement bonus effects when the paddle overlaps the bonus item
-        BaseActor.getList(mainStage, ITEM).forEach { item ->
-            if (paddle.overlaps(item)) {
-                val realItem = item as Item
-                when (realItem.type) {
-                    PADDLE_EXPAND -> paddle.width = paddle.width * 1.25f
-                    PADDLE_SHRINK -> paddle.width = paddle.width * 0.80f
-                    BALL_SPEED_UP -> ball.setSpeed(ball.getSpeed() * 1.50f)
-                    BALL_SPEED_DOWN -> ball.setSpeed(ball.getSpeed() * 0.90f)
-                }
-                paddle.setBoundaryPoly()
-                item.remove()
-                itemCollectSound.play()
-            }
-        }
-
-        //Bounce off the paddle
-        if (ball.overlaps(paddle)) {
-            val ballCenterX = ball.x + ball.width / 2
-            val paddlePercentHit = (ballCenterX - paddle.x) / paddle.width
-            val bounceAngle = lerp(150f, 30f, paddlePercentHit)
-            ball.setMotionAngle(bounceAngle)
-            bounceSound.play()
-        }
-
-        //Win if all bricks destroyed
-        if (BaseActor.count(mainStage, BRICK) == 0) {
-            messageLabel.apply {
-                setText("You win!")
-                color = Color.LIME
-                isVisible = true
-            }
-            gameOver = true
-        }
-
-        //Respawn the ball and the paddle
-        if (ball.y < -50 && BaseActor.count(mainStage, BRICK) > 0) {
-
-            //remove ball
-            ball.remove()
-
-            //remove all bonus items
-            BaseActor.getList(mainStage, ITEM).forEach { item -> item.remove() }
-
-            //remove paddle
-            paddle.apply {
-                setPosition(-100f, 0f)
-                remove()
-            }
-            paddle = Paddle(320f, 50f, mainStage)
-            if (balls > 0) {
-                balls -= 1
-                ballsLabel.setText("Balls: $balls")
-                ball = Ball(0f, 0f, mainStage)
-                messageLabel.apply {
-                    setText("Click to start")
-                    color = Color.CYAN
-                    isVisible = true
-                }
-
-            } else {
-                messageLabel.apply {
-                    setText("Game Over")
-                    color = Color.RED
-                    isVisible = true
-                }
-            }
+        if (solved) messageLabel.apply {
+            setText("Puzzle solved!")
+            isVisible = true
+        } else messageLabel.apply {
+            setText("...")
+            isVisible = false
         }
     }
 

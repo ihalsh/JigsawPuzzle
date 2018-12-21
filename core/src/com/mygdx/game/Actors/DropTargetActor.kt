@@ -1,8 +1,11 @@
 package com.mygdx.game.Actors
 
+import com.badlogic.gdx.graphics.g2d.Animation
+import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.scenes.scene2d.Stage
 
-class DropTargetActor(x: Float, y: Float, s: Stage) : BaseActor(x, y, s) {
+open class DropTargetActor(x: Float, y: Float, s: Stage, animation: Animation<TextureRegion>)
+    : BaseActor(x, y, s, animation) {
 
     var isTargetable: Boolean = false
 
